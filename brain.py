@@ -12,26 +12,23 @@ TEMPERATURE = 0.6
 TOP_P = 0.9
 
 def boot():
-    return "booted"
-    #return Llama.build(
-    #        ckpt_dir=CKPT_DIR,
-    #        tokenizer_path=TOKENIZER_PATH,
-    #        max_seq_len=512,
-    #        max_batch_size=1
-    #)
+    return Llama.build(
+            ckpt_dir=CKPT_DIR,
+            tokenizer_path=TOKENIZER_PATH,
+            max_seq_len=512,
+            max_batch_size=1
+    )
 
 def respond(generator, dialog):
-    return generator + dialog
-    #return generator.chat_completion(
-    #            dialog,
-    #            max_gen_len=None,
-    #            temperature=TEMPERATURE,
-    #            top_p=TOP_P,
-    #        )
+    return generator.chat_completion(
+                dialog,
+                max_gen_len=None,
+                temperature=TEMPERATURE,
+                top_p=TOP_P,
+            )
 
 def main():
     
-
     generator = Llama.build(
             ckpt_dir=CKPT_DIR,
             tokenizer_path=TOKENIZER_PATH,
@@ -49,9 +46,9 @@ def main():
                 top_p=TOP_P,
             )
 
-            #print("---")
-            #print(results)
-            #print("---")
+            print("---")
+            print(results)
+            print("---")
 
             print(
                 f"> Little Glados: {results[0]['generation']['content']}"

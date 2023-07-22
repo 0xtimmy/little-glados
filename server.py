@@ -21,13 +21,9 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         self.dialog = self.dialog + body
         response = brain.respond(self.generator, self.dialog)
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(bytes("<html><head><title>https://pythonbasics.org</title></head>", "utf-8"))
-        self.wfile.write(bytes("<p>Request: %s</p>" % self.path, "utf-8"))
-        self.wfile.write(bytes("<body>", "utf-8"))
-        self.wfile.write(bytes(f"<p>This is an example web server: {response}.</p>", "utf-8"))
-        self.wfile.write(bytes("</body></html>", "utf-8"))
+        self.wfile.write(bytes(response, "utf-8"))
 
 # open server
 def start():
