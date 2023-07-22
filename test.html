@@ -1,0 +1,13 @@
+<html>
+    <h2>Hi</h2>
+    <script>
+        fetch("https://localhost:8080", {
+            method: "POST",
+            body: "hello"
+        }).then((res) => {
+            res.text().then((result) => {
+                console.log(result)
+            })
+        })
+    </script>
+</html>
