@@ -1,7 +1,6 @@
-import sys
-sys.path.append(".")
 import http.server
 import ssl
+
 import brain
 
 HOSTNAME = "104.171.202.180"
@@ -11,17 +10,10 @@ dialog = []
 
 class GladosServer(http.server.BaseHTTPRequestHandler):
     
+    test = 2
     generator = brain.boot()
     dialog = []
     
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(bytes(response, "utf-8"))
-        self.wfile.write(bytes("hear you loud and clear", "utf-8"))
-
-
     def do_POST(self):
         body_len = int(self.headers.get('Content-Length'))
         body = self.rfile.read(body_len).decode()
