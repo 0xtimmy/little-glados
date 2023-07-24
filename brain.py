@@ -21,11 +21,11 @@ def boot():
 
 def respond(generator, dialog):
     return generator.chat_completion(
-                dialog,
+                [dialog],
                 max_gen_len=None,
                 temperature=TEMPERATURE,
                 top_p=TOP_P,
-            )
+            )[0]['generation']
 
 def main():
     
@@ -36,18 +36,21 @@ def main():
             max_batch_size=1
     )
     try:
+        dialog = []
         while True:
             user_input = input("> User: ")
+            dialog.append({ "role": "user", "content": user_input })
 
             results = generator.chat_completion(
-                [[{ "role": "user", "content": user_input }]],
+                [dialog],
                 max_gen_len=None,
                 temperature=TEMPERATURE,
                 top_p=TOP_P,
             )
+            dialog.append(results[0]['generation'])
 
             print("---")
-            print(results)
+            print(dialog)
             print("---")
 
             print(

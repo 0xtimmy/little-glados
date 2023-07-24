@@ -1,39 +1,52 @@
+import sys
+sys.path.append(".")
 import http.server
 import ssl
-
 import brain
 
-HOSTNAME = "localhost"
-PORT = 8080
+HOSTNAME = "104.171.202.180"
+PORT = 8000
 generator = None
 dialog = []
 
 class GladosServer(http.server.BaseHTTPRequestHandler):
     
-    test = 2
     generator = brain.boot()
-    dialog = " dialog "
+    dialog = []
     
-    def do_POST(self):
-        body_len = int(self.headers.get('Content-Length'))
-        body = self.rfile.read(body_len).decode()
-
-        self.dialog = self.dialog + body
-        response = brain.respond(self.generator, self.dialog)
+    def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(bytes(response, "utf-8"))
+        self.wfile.write(bytes("hear you loud and clear", "utf-8"))
+
+
+    def do_POST(self):
+        body_len = int(self.headers.get('Content-Length'))
+        body = self.rfile.read(body_len).decode()
+
+        self.dialog.append({ "role": "user", "content": body })
+        response = brain.respond(self.generator, self.dialog)
+        self.dialog.append(response)
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(bytes(response['content'], "utf-8"))
+        self.wfile.write(bytes("hear you loud and clear", "utf-8"))
 
 # open server
 def start():
     # open https server
+    print("starting server")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain("cert.pem", None)
     server = http.server.HTTPServer((HOSTNAME, PORT), GladosServer)
     server.socket = context.wrap_socket(server.socket, server_side=True)
     try:
+        print("serving")
         server.serve_forever()
+        print("server started")
     except KeyboardInterrupt:
         pass
     server.server_close()

@@ -4,6 +4,7 @@
 import json
 import os
 import sys
+sys.path.append(".")
 import time
 from pathlib import Path
 from typing import List, Literal, Optional, Tuple, TypedDict
