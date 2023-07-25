@@ -1,6 +1,7 @@
+import sys
+sys.path.append("./models")
 import http.server
 import ssl
-
 from llama import Llama
 
 CKPT_DIR = "./parameters/llama-2-7b-chat"
@@ -10,7 +11,7 @@ MAX_BATCH_SIZE = 1
 TEMPERATURE = 0.6
 TOP_P = 0.9
 
-HOSTNAME = "104.171.202.180"
+HOSTNAME = "104.171.202.53"
 PORT = 8000
 generator = None
 dialog = []
@@ -42,7 +43,6 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write(bytes(response['content'], "utf-8"))
-        self.wfile.write(bytes("hear you loud and clear", "utf-8"))
 
 # open server
 def start():
