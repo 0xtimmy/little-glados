@@ -27,7 +27,7 @@ RECORD_TIMEOUT = 1
 PHRASE_TIMEOUT = 3
 SAMPLE_RATE = 16000
 
-BRAIN_IP = "104.171.202.180"
+BRAIN_IP = "104.171.202.53"
 
 def log(x):
     print(x)
@@ -105,11 +105,10 @@ def main():
                         
                         # Brain
                         res = requests.post(f"https://{BRAIN_IP}:8000", data=transcription[-1], verify=False)
-                        log(f"Glados> {res}")
+                        log(f"Glados> {res.text}")
                         
                         # Mouth
-                        inputs = processor(text="Don't count the days, make the days count.", return_tensors="pt")
-                        inputs = processor(text=transcription[-1], return_tensors="pt")
+                        inputs = processor(text=res.text, return_tensors="pt")
                         speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
                         sf.write("speech.wav", speech.numpy(), samplerate=16000)
                         sound = AudioSegment.from_wav("speech.wav")
