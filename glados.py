@@ -6,14 +6,13 @@ import io
 import speech_recognition as sr
 import whisper
 import torch
+import numpy
 
 from time import time
 from queue import Queue
 from tempfile import NamedTemporaryFile
 from time import sleep
 import requests
-
-from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech
 
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 from datasets import load_dataset
@@ -27,7 +26,7 @@ RECORD_TIMEOUT = 1
 PHRASE_TIMEOUT = 3
 SAMPLE_RATE = 16000
 
-BRAIN_IP = "104.171.202.53"
+BRAIN_IP = "104.171.203.248"
 
 def log(x):
     print(x)
@@ -39,15 +38,15 @@ def main():
     data_queue = Queue()
     
     # Whisper Setup
-    listen = whisper.load_model("medium.en")
+    #listen = whisper.load_model("medium.en")
     
     # T5 Setup
-    processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
-    model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
-    vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
+    #processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
+    #model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
+    #vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
     
-    embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
-    speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
+    #embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
+    #speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
 
     # Recorders Setup
     record_timeout = RECORD_TIMEOUT
@@ -87,6 +86,7 @@ def main():
                 
                 with open(temp_file, 'w+b') as f:
                     f.write(wav_data.read())
+                    f.close()
                     
                 t_last_sample = time()
             else:
@@ -96,25 +96,14 @@ def main():
                         
                         log("--- Phrase Complete ---")
                         
-                        # Ears
-                        last_sample = bytes()
-                        result = listen.transcribe(temp_file, fp16=torch.cuda.is_available())
-                        text = result['text']
-                        transcription.append(text)
-                        log(f"User> {transcription[-1]}")
-                        
-                        # Brain
-                        res = requests.post(f"https://{BRAIN_IP}:8000", data=transcription[-1], verify=False)
-                        log(f"Glados> {res.text}")
-                        
-                        # Mouth
-                        inputs = processor(text=res.text, return_tensors="pt")
-                        speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
-                        sf.write("speech.wav", speech.numpy(), samplerate=16000)
-                        sound = AudioSegment.from_wav("speech.wav")
-                        play(sound)
-
+                        with open(temp_file, "rb") as f:
+                            res = requests.post(f"https://{BRAIN_IP}:8000", data=f.read(), verify=False)
+                            sound = AudioSegment(data=res.content, sample_width=2, frame_rate=16000, channels=1)
+                            play(sound)
+                            
                         log("--- Waiting for input ---")
+                        
+                        last_sample = bytes()
                         t_last_sample = time()
                     else:
                         t_last_sample = time()

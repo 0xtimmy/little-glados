@@ -2,3 +2,7 @@ torch
 fairscale
 fire
 sentencepiece
+tiktoken
+numba
+transformers
+datasets
