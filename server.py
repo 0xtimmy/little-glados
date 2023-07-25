@@ -58,6 +58,7 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         ears_res = self.ears.transcribe(temp_file, fp16=torch.cuda.is_available())
         
         self.dialog.append({ "role": "user", "content": ears_res["text"] })
+        log(f"User> {ears_res["text"]}")
         brain_res = self.brain.chat_completion(
                 [self.dialog],
                 max_gen_len=None,
@@ -65,7 +66,7 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
                 top_p=TOP_P,
             )[0]['generation']
         self.dialog.append(brain_res)
-        
+        log(f"Glados> {brain_res["content"]}")
         if(len(brain_res["content"]) > 600): brain_res["content"] = brain_res["content"][:599]
         inputs = self.mouth_processor(text=brain_res["content"], return_tensors="pt")
         speech = self.mouth.generate_speech(inputs["input_ids"], self.mouth_speaker_embeddings, vocoder=self.mouth_vocoder)
