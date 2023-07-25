@@ -21,7 +21,7 @@ MAX_BATCH_SIZE = 1
 TEMPERATURE = 0.6
 TOP_P = 0.9
 
-HOSTNAME = "104.171.202.53"
+HOSTNAME = "104.171.203.248"
 PORT = 8000
 generator = None
 dialog = []
@@ -58,6 +58,7 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         ears_res = self.ears.transcribe(temp_file, fp16=torch.cuda.is_available())
         
         self.dialog.append({ "role": "user", "content": ears_res["text"] })
+        log(f"User> {ears_res["text"]}")
         brain_res = self.brain.chat_completion(
                 [self.dialog],
                 max_gen_len=None,
@@ -65,14 +66,15 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
                 top_p=TOP_P,
             )[0]['generation']
         self.dialog.append(brain_res)
-        
+        log(f"Glados> {brain_res["content"]}")
+        if(len(brain_res["content"]) > 600): brain_res["content"] = brain_res["content"][:599]
         inputs = self.mouth_processor(text=brain_res["content"], return_tensors="pt")
         speech = self.mouth.generate_speech(inputs["input_ids"], self.mouth_speaker_embeddings, vocoder=self.mouth_vocoder)
         
         self.send_response(200)
         self.send_header("Content-type", "arrayBuffer")
         self.end_headers()
-        self.wfile.write(speech.numpy().tobytes())
+        self.wfile.write(speech.cpu().numpy().tobytes())
     
     #def do_POST(self):
     #    body_len = int(self.headers.get('Content-Length'))
