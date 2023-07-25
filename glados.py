@@ -6,14 +6,13 @@ import io
 import speech_recognition as sr
 import whisper
 import torch
+import numpy
 
 from time import time
 from queue import Queue
 from tempfile import NamedTemporaryFile
 from time import sleep
 import requests
-
-from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech
 
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 from datasets import load_dataset
@@ -87,6 +86,7 @@ def main():
                 
                 with open(temp_file, 'w+b') as f:
                     f.write(wav_data.read())
+                    f.close()
                     
                 t_last_sample = time()
             else:
@@ -97,24 +97,28 @@ def main():
                         log("--- Phrase Complete ---")
                         
                         # Ears
-                        last_sample = bytes()
-                        result = listen.transcribe(temp_file, fp16=torch.cuda.is_available())
-                        text = result['text']
-                        transcription.append(text)
-                        log(f"User> {transcription[-1]}")
+                        #result = listen.transcribe(temp_file, fp16=torch.cuda.is_available())
+                        #text = result['text']
+                        #transcription.append(text)
+                        #log(f"User> {transcription[-1]}")
                         
                         # Brain
-                        res = requests.post(f"https://{BRAIN_IP}:8000", data=transcription[-1], verify=False)
-                        log(f"Glados> {res.text}")
+                        #res = requests.post(f"https://{BRAIN_IP}:8000", data=transcription[-1], verify=False)
+                        with open(temp_file, "rb") as f:
+                            res = requests.pos(f"https://{BRAIN_IP}:8000", data=f.read(), verify=False)
+                            sound = AudioSegment(res.content, sample_width=2, framerate=16000, channels=1)
+                            play(sound)
+                        #log(f"Glados> {res.text}")
                         
                         # Mouth
-                        inputs = processor(text=res.text, return_tensors="pt")
-                        speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
-                        sf.write("speech.wav", speech.numpy(), samplerate=16000)
-                        sound = AudioSegment.from_wav("speech.wav")
-                        play(sound)
+                        #inputs = processor(text=res.text, return_tensors="pt")
+                        #speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
+                        #sf.write("speech.wav", speech.numpy(), samplerate=16000)
+                        #sound = AudioSegment.from_wav("speech.wav")
+                        #play(sound)
 
                         log("--- Waiting for input ---")
+                        last_sample = bytes()
                         t_last_sample = time()
                     else:
                         t_last_sample = time()
