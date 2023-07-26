@@ -71,7 +71,7 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         if(len(brain_res["content"]) > 600): brain_res["content"] = brain_res["content"][:599]
         inputs = self.mouth_processor(text=brain_res["content"], return_tensors="pt")
         speech = self.mouth.generate_speech(inputs["input_ids"], self.mouth_speaker_embeddings, vocoder=self.mouth_vocoder)
-        sf.write("speech.wav", speech.cpu().numpy(), samplerate=16000)
+        sf.write("speech.wav", speech.float32().cpu().numpy(), samplerate=16000)
         
         self.send_response(200)
         self.send_header("Content-type", "arrayBuffer")
