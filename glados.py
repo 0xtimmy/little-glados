@@ -98,7 +98,10 @@ def main():
                         
                         with open(temp_file, "rb") as f:
                             res = requests.post(f"https://{HOSTNAME}:8000", data=f.read(), verify=False)
-                            sound = AudioSegment(data=res.content, sample_width=2, frame_rate=16000, channels=1)
+                            with open("speech.wav", "w+b") as f:
+                                f.write(res.content)
+                                f.close()
+                            sound = AudioSegment.from_wav("speech.wav")
                             play(sound)
                             
                         log("--- Waiting for input ---")

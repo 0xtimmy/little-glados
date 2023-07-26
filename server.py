@@ -2,6 +2,7 @@ import sys
 sys.path.append("./models")
 from tempfile import NamedTemporaryFile
 import torch
+import soundfile as sf
 
 import http.server
 import ssl
@@ -51,11 +52,11 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         body_len = int(self.headers.get("Content-Length"))
         audio_in = self.rfile.read(body_len)
-        temp_file = NamedTemporaryFile().name
-        with open(temp_file, 'w+b') as f:
+        temp_in_file = NamedTemporaryFile().name
+        with open(temp_in_file, 'w+b') as f:
                 f.write(audio_in)
                 f.close()
-        ears_res = self.ears.transcribe(temp_file, fp16=torch.cuda.is_available())
+        ears_res = self.ears.transcribe(temp_in_file, fp16=torch.cuda.is_available())
         
         self.dialog.append({ "role": "user", "content": ears_res["text"] })
         log(f"User> {ears_res['text']}")
@@ -70,11 +71,14 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         if(len(brain_res["content"]) > 600): brain_res["content"] = brain_res["content"][:599]
         inputs = self.mouth_processor(text=brain_res["content"], return_tensors="pt")
         speech = self.mouth.generate_speech(inputs["input_ids"], self.mouth_speaker_embeddings, vocoder=self.mouth_vocoder)
+        sf.write("speech.wav", speech.cpu().numpy(), samplerate=16000)
         
         self.send_response(200)
         self.send_header("Content-type", "arrayBuffer")
         self.end_headers()
-        self.wfile.write(speech.cpu().numpy().tobytes())
+        with open("speech.wav", "w+b") as f:
+            self.wfile.write(f.read())
+            f.close()
     
 # open server
 def start():
