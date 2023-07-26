@@ -6,3 +6,4 @@ tiktoken
 numba
 transformers
 datasets
+soundfile

@@ -22,7 +22,7 @@ MAX_BATCH_SIZE = 1
 TEMPERATURE = 0.6
 TOP_P = 0.9
 
-HOSTNAME = "104.171.203.248"
+HOSTNAME = "104.171.203.39"
 PORT = 8000
 generator = None
 dialog = []
@@ -71,12 +71,12 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         if(len(brain_res["content"]) > 600): brain_res["content"] = brain_res["content"][:599]
         inputs = self.mouth_processor(text=brain_res["content"], return_tensors="pt")
         speech = self.mouth.generate_speech(inputs["input_ids"], self.mouth_speaker_embeddings, vocoder=self.mouth_vocoder)
-        sf.write("speech.wav", speech.cpu().numpy(), samplerate=16000)
+        sf.write("speech.wav", speech.to(torch.float32).cpu().numpy(), samplerate=16000)
         
         self.send_response(200)
         self.send_header("Content-type", "arrayBuffer")
         self.end_headers()
-        with open("speech.wav", "w+b") as f:
+        with open("speech.wav", "r+b") as f:
             self.wfile.write(f.read())
             f.close()
     
