@@ -26,7 +26,7 @@ RECORD_TIMEOUT = 1
 PHRASE_TIMEOUT = 3
 SAMPLE_RATE = 16000
 
-BRAIN_IP = "104.171.203.248"
+HOSTNAME = "104.171.203.248"
 
 def log(x):
     print(x)
@@ -97,7 +97,7 @@ def main():
                         log("--- Phrase Complete ---")
                         
                         with open(temp_file, "rb") as f:
-                            res = requests.post(f"https://{BRAIN_IP}:8000", data=f.read(), verify=False)
+                            res = requests.post(f"https://{HOSTNAME}:8000", data=f.read(), verify=False)
                             sound = AudioSegment(data=res.content, sample_width=2, frame_rate=16000, channels=1)
                             play(sound)
                             
