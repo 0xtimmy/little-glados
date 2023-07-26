@@ -23,10 +23,10 @@ from pydub.playback import play
 
 ENERGY_THRESHOLD = 1000
 RECORD_TIMEOUT = 1
-PHRASE_TIMEOUT = 3
+PHRASE_TIMEOUT = 2
 SAMPLE_RATE = 16000
 
-HOSTNAME = "104.171.203.248"
+HOSTNAME = "104.171.203.39"
 
 def log(x):
     print(x)
@@ -36,17 +36,6 @@ def main():
     log("Setting up...")
     last_sample = bytes()
     data_queue = Queue()
-    
-    # Whisper Setup
-    #listen = whisper.load_model("medium.en")
-    
-    # T5 Setup
-    #processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
-    #model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
-    #vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
-    
-    #embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
-    #speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
 
     # Recorders Setup
     record_timeout = RECORD_TIMEOUT
@@ -67,7 +56,7 @@ def main():
         data = audio.get_raw_data()
         data_queue.put(data)
     
-    recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
+    recorder.listen_in_background(source, record_callback, phrase_time_limit=RECORD_TIMEOUT)
     log("Setup complete! Listening...")
     t_last_sample = time()
     phrase_started = False
@@ -90,7 +79,7 @@ def main():
                     
                 t_last_sample = time()
             else:
-                if time() - t_last_sample > 5:
+                if time() - t_last_sample > PHRASE_TIMEOUT:
                     if phrase_started:
                         phrase_started = False
                         
