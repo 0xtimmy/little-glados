@@ -4,9 +4,6 @@ sys.path.insert(1, "./models")
 
 import io
 import speech_recognition as sr
-import whisper
-import torch
-import numpy
 
 from time import time
 from queue import Queue
@@ -14,10 +11,6 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 import requests
 
-from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
-from datasets import load_dataset
-import torch
-import soundfile as sf
 from pydub import AudioSegment
 from pydub.playback import play
 
@@ -38,9 +31,6 @@ def main():
     data_queue = Queue()
 
     # Recorders Setup
-    record_timeout = RECORD_TIMEOUT
-    phrase_timeout = PHRASE_TIMEOUT
-    
     temp_file = NamedTemporaryFile().name
     transcription = ['']
     
