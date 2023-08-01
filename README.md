@@ -10,7 +10,7 @@ This is a proof of concept project, but a roadmap with farther goals lies below:
 Glados can:
 - [X] Hold a conversation
 - [ ] Act with a less corporate personality
-- [ ] Filter out speech that isn't directed at Little Glados, 
+- [ ] Filter out speech that isn't directed at Little Glados
 - [ ] Call specified functions
 - [ ] "Extend" prompts to accomplish tasks greater than one response   
 - [ ] Run on standalone hardware (processor, speaker, microphone, case?, graphics?)
