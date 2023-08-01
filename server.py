@@ -1,6 +1,7 @@
 import sys
 sys.path.append("./models")
 import os
+import re
 from tempfile import NamedTemporaryFile
 import torch
 import soundfile as sf
@@ -18,12 +19,12 @@ from datasets import load_dataset
 
 CKPT_DIR = "./parameters/llama-2-7b-chat"
 TOKENIZER_PATH = "./models/llama/tokenizer.model"
-MAX_SEQ_LEN = 512
+MAX_SEQ_LEN = 1024
 MAX_BATCH_SIZE = 1
 TEMPERATURE = 0.6
 TOP_P = 0.9
 
-HOSTNAME = "104.171.203.39"
+HOSTNAME = "104.171.203.59"
 PORT = 8000
 generator = None
 dialog = []
@@ -33,52 +34,53 @@ def log(x):
     sys.stdout.flush()
 
 def handle_write(self, generation, match):
-    log("handling write")
-    with open(match.filename, "w") as f:
-        f.write(match.content)
+    log("< Handling Write")
+    with open(match.group("filename"), "w") as f:
+        f.write(match.group("content"))
         f.close()
     self.write_headers()
     self.write_audio("written!")
         
 def handle_append(self, generation, match):
-    log("handling append")
-    with open(match.filename, "a") as f:
-        f.write(match.content)
+    log("< Handling Append")
+    with open(match.group("filename"), "a") as f:
+        f.write(match.group("content"))
         f.close()
     self.write_headers()
     self.write_audio("written!")
 
 
 def handle_read(self, generation, match):
-    log("handling read")
-    with open(match.filename, "r") as f:
+    log("< Handling Read")
+    with open(match.group("filename"), "r") as f:
         out = f.read()
         f.close()
     self.write_headers()
-    self.write_audio("")
+    self.write_audio(read)
     
-def handle_pass(match):
-    log("handling pass")
+def handle_pass(self, generation, match):
+    log("< Handling Pass")
+    self.write_headers(204)
 
 SYSTEM_COMMAND_REGISTRY = {
         "write": {
             "key": "write",
-            "regex": "<write\s+to=\"(filename)\"\s*>(content)</write>",
+            "regex": re.compile(r"<write\s+to=\"(?P<filename>[^\"]+)\"\s*>(?P<content>(?:.|\n)+(?=<\/write>))<\/write>"),
             "handler": handle_write
         },
         "append": {
             "key": "append",
-            "regex": "<append\s+to=\"(filename)\"\s*>(content)</append>",
+            "regex": re.compile(r"<append\s+to=\"(?P<filename>[^\"]+)\"\s*>(?P<content>(?:.|\n)+(?=<\/append>))<\/append>"),
             "handler": handle_append,
         },
         "read": {
             "key": "read",
-            "regex": "<read\s+from=\"(filename)\" />",
+            "regex": re.compile(r"<read\s+to=\"(?P<filename>[^\"]+)\"\s*/>"),
             "handler": handle_read,
         },
         "pass": {
             "key": "pass",
-            "regex": "<pass\s+/>",
+            "regex": re.compile(r"<pass\s*/>"),
             "handler": handle_pass,
         }
     }
@@ -86,29 +88,31 @@ SYSTEM_COMMAND_REGISTRY = {
     
 SYSTEM_COMMANDS = [
     # general
-    "You have access to a few comamnds that you can say in order to perform certain functions,they are listed below",
+    "You have access to a few comamnds that you can say in order to perform certain functions,they are listed below. ONLY say them when you wish to execute them.",
     "Firstly, you have access to a filesystem to record bits of information",
     # write
-    "If you want to save something to the filesystem, say \"<write to=\"{filename}\"> {contents} </write>\", replacing \"{filename}\" with the name of the file you want to write to and \"{content}\" with the content of the file"
+    "If you want to save something to the filesystem, to take notes or write things down for example, say \"<write to=\"{filename}\"> {contents} </write>\", replacing \"{filename}\" with the name of the file you want to write to and \"{content}\" with the content of the file",
     # appemnd
-    "If you want to add to an existing file without deleting the existing content say \"<append to=\"{filename}\"> {contents} </append>\", replacing \"{filename}\" with the name of the file you want to append to and \"{content}\" with the added content of the file",
+    "If you want to add to an existing file without deleting the existing content, to add to a running list for example, say \"<append to=\"{filename}\"> {contents} </append>\", replacing \"{filename}\" with the name of the file you want to append to and \"{content}\" with the added content of the file",
     # read
-    "If you want to read something from the filesystem say \"<read from-\"{filename}\" /> replacing \"{filename}\" with the name of the file you want to read from, and the user will read the contents of the file to you"
+    "If you want to read something from the filesystem, like a note that you took previously, say \"<read from-\"{filename}\" /> replacing \"{filename}\" with the name of the file you want to read from, and the user will read the contents of the file to you",
     # list
-    "If you want to check the list of existing files say \"<list>\", and the user will read to you the list of existing files"
+    "If you want to check the list of existing files say \"<list>\", and the user will read to you the list of existing files.",
+    # pass
+    "Secondly, you might be only one of many people in a conversation. If something is said that wasn't to you just say \"<pass />\" and the conversation will continue"
 ]
 
-SYSTEM_INSTRUCTIONS = " ".join([
-    "Pretend you are a retired red cross pilot named \"Glados\".",
-    "You are always positive, respectful and honest. You never use profanity.",
+SYSTEM_PERSONALITY = [
+    "You are a robot assistant named \"Glados\".",
+    "You are always positive, respectful and honest. You never use profanity and you lightheartedly chastise people when they do.",
     "If something doesn't make sense or you can't figure out how to reply, ask for clarification.",
-    "You now accompany your friend around the world.",
-    SYSTEM_COMMANDS
-    ])
+    "Be concise with your responses.",
+]
+
+SYSTEM_INSTRUCTIONS = " ".join(SYSTEM_COMMANDS + SYSTEM_PERSONALITY)
 
 class GladosServer(http.server.BaseHTTPRequestHandler):
     
-    test = 2
     ears = whisper.load_model("medium.en")
     brain = Llama.build(
             ckpt_dir=CKPT_DIR,
@@ -127,14 +131,14 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         "content": SYSTEM_INSTRUCTIONS
     }]
     
-    def write_headers(self):
-        self.send_response(200)
+    def write_headers(self, status_code=200):
+        self.send_response(status_code)
         self.send_header("Content-type", "arrayBuffer")
         self.end_headers()
     
     def write_audio(self, content):
-        if(len(content > 600)): content = content[:599]
-        inputs = self.mouth_processor(text=brain_res["content"], return_tensors="pt")
+        if(len(content) > 512): content = content[:511]
+        inputs = self.mouth_processor(text=content, return_tensors="pt")
         speech = self.mouth.generate_speech(inputs["input_ids"], self.mouth_speaker_embeddings, vocoder=self.mouth_vocoder)
         sf.write("speech.wav", speech.to(torch.float32).cpu().numpy(), samplerate=16000)
         with open("speech.wav", "r+b") as f:
@@ -149,10 +153,12 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
         with open(temp_in_file, 'w+b') as f:
                 f.write(audio_in)
                 f.close()
-        ears_res = self.ears.transcribe(temp_in_file, fp16=torch.cuda.is_available())
+        ears_res = self.ears.transcribe(temp_in_file, fp16=torch.cuda.is_available())["text"]
         
-        self.dialog.append({ "role": "user", "content": ears_res["text"] })
-        log(f"User> {ears_res['text']}")
+        if(len(ears_res) > 512): ears_res = ears_res[:511]
+        
+        self.dialog.append({ "role": "user", "content": ears_res })
+        log(f"User > {ears_res}")
         brain_res = self.brain.chat_completion(
                 [self.dialog],
                 max_gen_len=None,
@@ -160,14 +166,17 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
                 top_p=TOP_P,
             )[0]['generation']
         self.dialog.append(brain_res)
-        log(f"Glados> {brain_res['content']}")
+        
+        log(f"Glados > {brain_res['content']}")
         for command in SYSTEM_COMMAND_REGISTRY:
-            match = brain_res['content'].match(command.regex)
-            if match:
-                command["handler"](self, brain_res['content'], match)
+            match = SYSTEM_COMMAND_REGISTRY[command]["regex"].search(brain_res['content'])
+            if match is not None:
+                SYSTEM_COMMAND_REGISTRY[command]["handler"](self, brain_res['content'], match)
                 return
+        
         self.write_headers()
-        self.write_audio(brain_res["content"])
+        self.write_audio(brain_res['content'])
+        return
     
 # open server
 def start():
