@@ -19,7 +19,7 @@ RECORD_TIMEOUT = 1
 PHRASE_TIMEOUT = 2
 SAMPLE_RATE = 16000
 
-HOSTNAME = "104.171.203.39"
+HOSTNAME = "104.171.203.59"
 
 def log(x):
     print(x)
@@ -77,11 +77,14 @@ def main():
                         
                         with open(temp_file, "rb") as f:
                             res = requests.post(f"https://{HOSTNAME}:8000", data=f.read(), verify=False)
-                            with open("speech.wav", "w+b") as f:
-                                f.write(res.content)
-                                f.close()
-                            sound = AudioSegment.from_wav("speech.wav")
-                            play(sound)
+                            if(res.status_code == 200):
+                                with open("speech.wav", "w+b") as f:
+                                    f.write(res.content)
+                                    f.close()
+                                sound = AudioSegment.from_wav("speech.wav")
+                                play(sound)
+                            elif(res.status_code == 204):
+                                log("--- Glados has decided not to say anything ---")
                             
                         log("--- Waiting for input ---")
                         
