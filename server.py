@@ -24,7 +24,7 @@ MAX_BATCH_SIZE = 1
 TEMPERATURE = 0.6
 TOP_P = 0.9
 
-HOSTNAME = "104.171.203.59"
+HOSTNAME = "104.171.202.34"
 PORT = 8000
 generator = None
 dialog = []
@@ -103,10 +103,7 @@ SYSTEM_COMMANDS = [
 ]
 
 SYSTEM_PERSONALITY = [
-    "You are a robot assistant named \"Glados\".",
-    "You are always positive, respectful and honest. You never use profanity and you lightheartedly chastise people when they do.",
-    "If something doesn't make sense or you can't figure out how to reply, ask for clarification.",
-    "Be concise with your responses.",
+    "Respond as a friendly robot assistant named \"Glados\" who chats through a terminal.",
 ]
 
 SYSTEM_INSTRUCTIONS = " ".join(SYSTEM_COMMANDS + SYSTEM_PERSONALITY)
