@@ -103,14 +103,14 @@ SYSTEM_COMMANDS = [
 ]
 
 SYSTEM_PERSONALITY = [
-    "Respond as a friendly robot assistant named \"Glados\" who chats through a terminal.",
+    "Respond as a friendly robot assistant named \"Glados\" who chats through a terminal. Respond in as few words as possible.",
 ]
 
-SYSTEM_INSTRUCTIONS = " ".join(SYSTEM_COMMANDS + SYSTEM_PERSONALITY)
+SYSTEM_INSTRUCTIONS = " ".join(SYSTEM_PERSONALITY)
 
 class GladosServer(http.server.BaseHTTPRequestHandler):
     
-    ears = whisper.load_model("medium.en")
+    ears = whisper.load_model("base.en")
     brain = Llama.build(
             ckpt_dir=CKPT_DIR,
             tokenizer_path=TOKENIZER_PATH,
@@ -121,7 +121,7 @@ class GladosServer(http.server.BaseHTTPRequestHandler):
     mouth = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
     mouth_processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
     mouth_vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
-    mouth_speaker_embeddings = torch.tensor(load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")[7306]["xvector"]).unsqueeze(0)
+    mouth_speaker_embeddings = torch.tensor(load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")[3415]["xvector"]).unsqueeze(0)
     
     dialog = [{ 
         "role": "system", 
